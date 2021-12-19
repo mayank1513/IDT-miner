@@ -1,6 +1,21 @@
 {
   "compilerOptions": {
     "target": "esnext",
+    "baseUrl": ".",
+    "paths": {
+      "@/components/*": [
+        "components/*"
+      ],
+      "@/utils/*": [
+        "utils/*"
+      ],
+      "@/styles/*": [
+        "styles/*"
+      ],
+      "@/public/*": [
+        "public/*"
+      ]
+    },
     "module": "esnext",
     "jsx": "preserve",
     "lib": ["dom", "es2017"],
