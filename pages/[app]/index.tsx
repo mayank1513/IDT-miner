@@ -1,8 +1,11 @@
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { albRow, audioRow } from "types";
 
 export default function App() {
   const router = useRouter();
+  const [albums, setAlbums] = useState<albRow[]>([])
+  const [audios, setAudios] = useState<audioRow[]>([])
   useEffect(() => {
     // check for folders.dat and files.csv
     const path = router.query.app;
@@ -20,6 +23,8 @@ export default function App() {
     }).then(res => res.json())
       .then(data => {
         console.log(data)
+        setAlbums(data.albums);
+        setAudios(data.audios);
       })
     return () => {
 
@@ -27,7 +32,14 @@ export default function App() {
   }, [router.query])
   return (
     <div>
-      <span>{router.asPath}</span>
+      <h1>Albums</h1>
+      {
+        albums.map(a => (<p>{a.labels[0]}</p>))
+      }
+      <h1>Audios</h1>
+      {
+        audios.map(a => (<p>{a.labels[0]}</p>))
+      }
     </div>
   );
 }

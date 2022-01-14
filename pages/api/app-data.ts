@@ -8,6 +8,8 @@ import { albRow } from 'types';
 import { audioRow } from 'types';
 import { findStem, hari, getRef, getPlace } from '@/utils/index';
 
+import pLimit from 'p-limit';
+
 const albHeaders = ['url', 'labels', 'arte', 'date', 'lang', 'place'];
 const audioHeaders = ['url', 'labels', 'arte', 'sloka', 'date', 'lang', 'place', 'size'];
 
@@ -19,8 +21,9 @@ function getExistingData({ cDir, albumsFile, audiosFile }: { cDir: string, album
         const stem = albs[0].split(',')[0].trim();
         albs.slice(1).forEach(alb => {
             let [, url, title, arte, date, lang, place] = alb.split(', ');
+            if (!url) return;
             url = url.replace(/#/g, stem);
-            fs.existsSync(path.join(cDir, url)) && url && typeof place == 'string' && existingAlbs.push({ url, labels: [title], arte, date, lang: parseInt(lang), place })
+            fs.existsSync(path.join(cDir, url)) && typeof place == 'string' && existingAlbs.push({ url, labels: [title], arte, date, lang: parseInt(lang), place })
         })
     }
 
@@ -92,7 +95,7 @@ function writeData({ cDir, albumsFile, audiosFile, albums, audios }: { cDir: str
     fs.writeFileSync(audiosFile, `${stem},${audioHeaders.join(', ')}\n` + audios.map(a => ({ ...a, url: a.url.replace(new RegExp(stem, 'g'), '#') })).map(a => audioHeaders.reduce((r, c) => `${r}, ${a[c]}`, '')).join('\n'));
 }
 
-async function getData(cDir: string, baseUrl: string, appDir: string, update: boolean, parentAlb = '') {
+async function getData(cDir: string, baseUrl: string, appDir: string, update: boolean, parentAlb = '', mxConc = 5) { //mxCon 6 => maxConcarency of 5*4*3*2 = 80 in worst case -- in exceptional case when many subalbums are added and updates in several nested albums it might go beyond
     fs.existsSync(cDir) || fs.mkdirSync(cDir);
     const albumsFile = path.join(cDir, "albums.csv");
     const audiosFile = path.join(cDir, "audios.csv");
@@ -111,18 +114,18 @@ async function getData(cDir: string, baseUrl: string, appDir: string, update: bo
     let newAlbs = 0;
     let updatedAlbs = 0;
     if (!existingAlbs.length && !existingAudios.length) {
-        // do not use forEach or map etc. as too many requests at once will hang up the process
         newAlbs = albums.length;
         newAudios = audios.length;
-        for (let i = 0; i < albums.length; i++) {
-            const alb = albums[i];
-            const { updates } = await getData(path.join(cDir, alb.url), baseUrl, appDir, update, alb.labels[0]);
+        const limit = pLimit(mxConc);
+        mxConc = Math.max(1, mxConc - 1);
+        await Promise.all(albums.map(alb => limit(async () => {
+            const { updates } = await getData(path.join(cDir, alb.url), baseUrl, appDir, update, alb.labels[0], mxConc);
             if (updates) {
                 newAudios += updates.newAudios || 0;
                 newAlbs += updates.newAlbs || 0;
                 updatedAlbs += updates.updatedAlbs || 0;
             }
-        }
+        })))
         writeData({ cDir, albumsFile, audiosFile, albums, audios });
         return { updates: { newAudios, newAlbs, updatedAlbs }, tmp, audios, albums }
     } else {
@@ -131,7 +134,7 @@ async function getData(cDir: string, baseUrl: string, appDir: string, update: bo
                 const alb = albums[i];
                 const alb1 = existingAlbs.filter(a => a.url == alb.url)[0];
                 if (!alb1 || alb1.date.trim() !== alb.date.trim()) {
-                    const { updates } = await getData(path.join(cDir, alb.url), baseUrl, appDir, update, alb.labels[0]);
+                    const { updates } = await getData(path.join(cDir, alb.url), baseUrl, appDir, update, alb.labels[0], mxConc);
                     if (updates) {
                         newAudios += updates.newAudios || 0;
                         newAlbs += updates.newAlbs || 0;
@@ -150,7 +153,7 @@ async function getData(cDir: string, baseUrl: string, appDir: string, update: bo
             for (let i = 0; i < existingAlbs.length; i++) {
                 const alb = existingAlbs[i];
                 albums.push(existingAlbs[i]);
-                const { updates } = await getData(path.join(cDir, alb.url), baseUrl, appDir, update, alb.labels[0]);
+                const { updates } = await getData(path.join(cDir, alb.url), baseUrl, appDir, update, alb.labels[0], mxConc);
                 if (updates) {
                     newAudios += updates.newAudios || 0;
                     newAlbs += updates.newAlbs || 0;
