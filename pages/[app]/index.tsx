@@ -1,6 +1,8 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { albRow, audioRow } from "types";
+import AlbRow from '@/components/AlbRow';
+import AudioRow from "@/components/AudioRow";
 
 export default function App() {
   const router = useRouter();
@@ -31,15 +33,45 @@ export default function App() {
     }
   }, [router.query])
   return (
-    <div>
-      <h1>Albums</h1>
+    <Container>
       {
-        albums.map(a => (<p>{a.labels[0]}</p>))
+        albums.length != 0 && (
+          <>
+            <h1>Albums</h1>
+            <table>
+              <tbody>
+                {
+                  albums.map(a => <AlbRow key={a.url} album={a} arteBaseUrl="" />)
+                }
+              </tbody>
+            </table>
+          </>
+        )
       }
-      <h1>Audios</h1>
       {
-        audios.map(a => (<p>{a.labels[0]}</p>))
+        audios.length != 0 && (
+          <>
+            <h1>Audios</h1>
+            <table>
+              <tbody>
+                {
+                  audios.map(a => <AudioRow key={a.url} audio={a} arteBaseUrl="" />)
+                }
+              </tbody>
+            </table>
+          </>
+        )
       }
-    </div>
+    </Container>
   );
 }
+
+import styled from "styled-components";
+const Container = styled.div/*css */`
+max-width: 1400px;
+margin: auto;
+table {
+  margin: 20px;
+  width: 100%;
+}
+`

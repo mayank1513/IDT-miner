@@ -1,3 +1,5 @@
+// #todo - add queue mecanism to fetch - no need to use p-limit
+
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { Info } from 'types';
 
