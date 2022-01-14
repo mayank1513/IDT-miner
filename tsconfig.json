@@ -14,6 +14,9 @@
       ],
       "@/public/*": [
         "public/*"
+      ],
+      "@/store/*": [
+        "store/*"
       ]
     },
     "module": "esnext",

@@ -3,6 +3,7 @@ import { createGlobalStyle } from "styled-components";
 import Head from "next/head";
 
 import Header from "@/components/Header";
+import AppWrapper from "@/store/index";
 
 const GlobalStyles = createGlobalStyle`
 html,
@@ -34,7 +35,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <GlobalStyles />
       <Header></Header>
       <main>
-        <Component {...pageProps} />
+        <AppWrapper>
+          <Component {...pageProps} />
+        </AppWrapper>
       </main>
     </>
   );

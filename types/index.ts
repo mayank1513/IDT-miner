@@ -11,3 +11,23 @@ export class Info {
     appName_i18n: string = ""
     dir: string = ""
 }
+
+export interface albRow {
+    url: string,
+    labels: string[],
+    arte: string,
+    date: string,
+    lang: number,
+    place: string,
+}
+
+export interface audioRow {
+    url: string,
+    labels: string[],
+    arte: string,
+    sloka: string,
+    date: string,
+    lang: number,
+    place: string,
+    size: string
+}

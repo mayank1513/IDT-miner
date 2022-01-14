@@ -11,6 +11,7 @@ specifiers:
   react-dom: 17.0.2
   react-is: 17.0.2
   styled-components: 5.3.3
+  tiny-async-pool: ^1.2.0
   typescript: 4.2.4
 
 dependencies:
@@ -19,6 +20,7 @@ dependencies:
   react-dom: 17.0.2_react@17.0.2
   react-is: 17.0.2
   styled-components: 5.3.3_281a4fa50a045c9112baf635f3bc27a7
+  tiny-async-pool: 1.2.0
 
 devDependencies:
   '@types/node': 15.0.0
@@ -1734,6 +1736,11 @@ packages:
       object-assign: 4.1.1
     dev: false
 
+  /semver/5.7.1:
+    resolution: {integrity: sha512-sauaDf/PZdVgrLTNYHRtpXa1iRiKcaebiKQ1BJdpQlWH2lCvexQdX55snPFyK7QzpudqbCI0qXFfOasHdyNDGQ==}
+    hasBin: true
+    dev: false
+
   /semver/6.3.0:
     resolution: {integrity: sha512-b39TBaTSfV6yBrapU89p5fKekE2m/NwnDocOVruQFS1/veMgdzuPcnOM34M6CwxW8jH/lxEa5rBoDeUwu5HHTw==}
     hasBin: true
@@ -1942,6 +1949,13 @@ packages:
       setimmediate: 1.0.5
     dev: false
 
+  /tiny-async-pool/1.2.0:
+    resolution: {integrity: sha512-PY/OiSenYGBU3c1nTuP1HLKRkhKFDXsAibYI5GeHbHw2WVpt6OFzAPIRP94dGnS66Jhrkheim2CHAXUNI4XwMg==}
+    dependencies:
+      semver: 5.7.1
+      yaassertion: 1.0.2
+    dev: false
+
   /to-fast-properties/2.0.0:
     resolution: {integrity: sha1-3F5pjL0HkmW8c+A3doGk5Og/YW4=}
     engines: {node: '>=4'}
@@ -2066,6 +2080,10 @@ packages:
   /xtend/4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
+    dev: false
+
+  /yaassertion/1.0.2:
+    resolution: {integrity: sha512-sBoJBg5vTr3lOpRX0yFD+tz7wv/l2UPMFthag4HGTMPrypBRKerjjS8jiEnNMjcAEtPXjbHiKE0UwRR1W1GXBg==}
     dev: false
 
   /yocto-queue/0.1.0:

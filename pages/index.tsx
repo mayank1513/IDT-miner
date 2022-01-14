@@ -2,24 +2,19 @@ import AppDetails from "@/components/AppDetails";
 import { Info } from "types";
 import { useEffect, useReducer } from "react";
 import Link from "next/link";
+import { useIDTContext, updateApps } from '@/store/index'
 
 type HomeState = {
   showModal: boolean;
-  apps: Array<Info>;
   selectedAppId: number;
 };
 
 const ACTION_SET_MODAL_VISIBLE = "modal-visible";
-const ACTION_UPDATE_APPS = "update-apps";
 const ACTION_SELECT_APP = "select-app";
 
 const setModalVisible = (visible: boolean) => ({
   type: ACTION_SET_MODAL_VISIBLE,
   visible,
-});
-const updateApps = (apps: Array<Info>) => ({
-  type: ACTION_UPDATE_APPS,
-  apps,
 });
 const selectApp = (id: number) => ({ type: ACTION_SELECT_APP, id });
 
@@ -29,24 +24,23 @@ const reducer = (state: HomeState, action: any) => {
       return { ...state, showModal: action.visible };
     case ACTION_SELECT_APP:
       return { ...state, selectedAppId: action.id };
-    case ACTION_UPDATE_APPS:
-      return { ...state, apps: action.apps };
   }
   return state;
 };
 
 export default function Home() {
-  const [{ showModal, apps, selectedAppId }, dispatch] = useReducer(reducer, {
+  const [{ showModal, selectedAppId }, dispatch] = useReducer(reducer, {
     showModal: false,
-    apps: [],
     selectedAppId: 0,
   });
+
+  const [{ apps }, setSharedState] = useIDTContext();
 
   const updateProjects = () => {
     fetch("/api/projects")
       .then((res) => res.json())
       .then((data) => {
-        dispatch(updateApps(data));
+        setSharedState(updateApps(data));
       })
       .finally(() => {
         dispatch(setModalVisible(false));

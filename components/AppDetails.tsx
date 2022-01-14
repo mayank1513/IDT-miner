@@ -2,15 +2,17 @@ import { Info } from "types";
 import { useState } from "react";
 import { FormEventHandler, FormEvent } from "react";
 
+interface props {
+  info: Info;
+  createNew: boolean;
+  updateApps: Function;
+}
+
 const AppDetails = ({
   info = new Info(),
   createNew = false,
   updateApps,
-}: {
-  info: Info;
-  createNew: boolean;
-  updateApps: Function;
-}) => {
+}: props) => {
   const [infoState, setInfoState] = useState(info);
   const onSubmit: FormEventHandler = (e: FormEvent) => {
     e.preventDefault();
@@ -88,11 +90,23 @@ const AppDetails = ({
 export default AppDetails;
 
 import styled from "styled-components";
+import { keyframes } from "styled-components";
+
+const fade = keyframes`
+from {
+  opacity: 0;
+}
+to {
+  opacity: 1;
+}
+`
+
 const Form = styled.form`
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
+  animation: ${fade} 1s;
   td {
     padding: 5px;
   }

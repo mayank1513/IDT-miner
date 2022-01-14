@@ -5,11 +5,11 @@ import fs from 'fs';
 import path from 'path'
 
 export default (req: NextApiRequest, res: NextApiResponse) => {
-    if (req.method == 'POST') {
-        const dataDir = path.join(process.cwd(), "data");
-        fs.existsSync(dataDir) || fs.mkdirSync(dataDir);
-        const info: Info = req.body.info;
+    const dataDir = path.join(process.cwd(), "data");
+    fs.existsSync(dataDir) || fs.mkdirSync(dataDir);
 
+    if (req.method == 'POST') {
+        const info: Info = req.body.info;
         let [remote, dir] = [
             info.remote.trim(),
             encodeURI(info.appName.trim().replace(/ /g, "-")),
@@ -18,7 +18,7 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
             dir = remote
                 .replace("https://", "")
                 .replace(".git", "")
-                .replace(/\//g, "-")
+                .replace(/(\/|\.)/g, "-")
                 .trim();
         }
 
@@ -41,6 +41,9 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
             fs.writeFileSync(path.join(appDir, 'info.json'), JSON.stringify(info));
             res.status(200).json({ info: "Project Updated" })
         }
+    } else if (req.method == 'DELETE') {
+        fs.rmSync(path.join(path.join(dataDir, req.body.dir)), { recursive: true, force: true });
+        res.status(200).json({ info: "Project Deleted" })
     } else
         res.status(400);
 }
