@@ -275,3 +275,16 @@ export function getRef(title_: string): { title_: string, sloka: string, date: s
     }
     return { ...res, ...getDate(res.title_) };
 }
+
+export function getLang(title: string, l: any) {
+    let lang = '';
+    Object.keys(l).some(k => {
+        const m = title.match(new RegExp(l[k], 'i'));
+        if (m && m[0]) {
+            title = title.replace(m[0], '');
+            lang = k;
+            return true;
+        }
+    })
+    return { title, lang }
+}

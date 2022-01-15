@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <section>
-      {apps.length && (
+      {apps.length != 0 && (
         <Main>
           <ul className="appList">
             {apps.map((app: Info, ind: number) => (
@@ -81,8 +81,10 @@ export default function Home() {
         +
       </FloatingButton>
       {showModal && (
-        <Modal>
-          <div className="modalContent">
+        <Modal onClick={() => {
+          dispatch(setModalVisible(false));
+        }}>
+          <div className="modalContent" onClick={e => e.stopPropagation()}>
             <AppDetails
               info={new Info()}
               createNew={true}
@@ -97,15 +99,16 @@ export default function Home() {
 
 import styled from "styled-components";
 
-const Main = styled.div`
+const Main = styled.div/*css */`
   display: flex;
   width: 100vw;
-  height: 100vh;
   & > * {
     flex-grow: 1;
     height: 100%;
     margin: 0;
-    border: 1px solid gray;
+    border-left: 1px solid gray;
+    border-right: 1px solid gray;
+    box-sizing: content-box;
   }
   .appList {
     list-style-type: none;
@@ -161,19 +164,31 @@ const FloatingButton = styled.div`
   }
 `;
 
-const Modal = styled.div`
+const Modal = styled.div/*css */`
   background: #0035;
   position: fixed;
+  padding: 50px;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   .modalContent {
     background: white;
+    max-width: 800px;
+    max-height: 80vh;
+    margin: auto;
+    overflow: auto;
     border-radius: 10px;
     padding: 10px;
+    ::-webkit-scrollbar {
+      width: 10px;  /* Remove scrollbar space */
+      background: transparent;  /* Optional: just make scrollbar invisible */
+      border-radius: 10px;
+  }
+  /* Optional: show position indicator in red */
+  ::-webkit-scrollbar-thumb {
+      background: #5552;
+      border-radius: 10px;
+  }
   }
 `;

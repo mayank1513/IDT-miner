@@ -1,33 +1,38 @@
 export class Info {
-    appName: string = ""
-    baseUrl: string = ""
-    ytBaseUrl: string = ""
-    infoUrl: string = ""
-    fb: string = ""
-    yt: string = ""
-    linkedin: string = ""
-    twitter: string = ""
-    remote: string = ""
-    appName_i18n: string = ""
-    dir: string = ""
+    appName = ""
+    baseUrl = ""
+    ytBaseUrl = ""
+    infoUrl = ""
+    fb = ""
+    yt = ""
+    linkedin = ""
+    twitter = ""
+    remote = ""
+    dir = ""
+    i18n = {
+        titles: {},
+        labelLangs: { en: 'English' },
+        audioLangs: { en: 'English', vb: 'Vaiṣṇavā Bhajan', hk: 'Hare Kṛṣṇa Kirtan' }
+    }
 }
 
 export interface albRow {
     url: string,
-    labels: string[],
+    labels: any,
     arte: string,
     date: string,
-    lang: number,
+    lang: string,
     place: string,
 }
 
 export interface audioRow {
     url: string,
-    labels: string[],
+    labels: any,
     arte: string,
     sloka: string,
     date: string,
-    lang: number,
+    lang: string,
     place: string,
-    size: string
+    size: string,
+    video: string
 }

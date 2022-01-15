@@ -2,7 +2,10 @@ import type { NextComponentType } from "next";
 import Image from "next/image";
 import styled from "styled-components";
 
-const StyledHeader = styled.header`
+const StyledHeader = styled.header/*css */`
+  position: fixed;
+  width: 100%;
+  background: #fff;
   display: flex;
   align-items: center;
   padding: 5px 10px;

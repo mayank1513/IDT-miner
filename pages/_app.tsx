@@ -34,7 +34,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <GlobalStyles />
       <Header></Header>
-      <main>
+      <main style={{ paddingTop: '5em' }}>
         <AppWrapper>
           <Component {...pageProps} />
         </AppWrapper>
