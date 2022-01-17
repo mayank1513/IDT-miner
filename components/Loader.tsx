@@ -3,7 +3,7 @@ import styled from "styled-components";
 export default function Loader({ message }: { message?: string }) {
     return (
         <Container>
-            <p>{message}</p>
+            <p>{message || 'loading...'}</p>
         </Container>
     )
 }

@@ -8,24 +8,91 @@ import path from 'path'
 
 import { albRow } from 'types';
 import { audioRow } from 'types';
-import { findStem, hari, getRef, getPlace, getLang } from '@/utils/index';
+import { findStem, hari, getRef, touchUp } from '@/utils/index';
 
 import pLimit from 'p-limit';
 
-const albHeaders = ['url', 'labels', 'arte', 'date', 'lang', 'place'];
-const audioHeaders = ['url', 'labels', 'arte', 'sloka', 'date', 'lang', 'place', 'size', 'video'];
+const albHeaders = ['url', 'labels', 'arte', 'sloka', 'date', 'lang', 'place', 'video', 'lastUpdatTime'];
+const audioHeaders = ['url', 'labels', 'arte', 'sloka', 'date', 'lang', 'place', 'video', 'size', 'lastUpdatTime'];
 
-function getExistingData({ cDir, albumsFile, audiosFile, info }: { cDir: string, albumsFile: string, audiosFile: string, info: Info }) {
+const dataDir = path.join(process.cwd(), "data");
+const fileUtils = (() => {
+    let _places_: string[] = [];
+    let _specialPlaces_: string[] = [];
+    let _regex_: [string, string, string][] = [];
+
+    function getPl(file: string, appDir?: string) {
+        const dtPlFile = path.join(dataDir, file);
+        const plFile = appDir && path.join(appDir, file);
+        return [
+            ...(plFile && fs.existsSync(plFile) && fs.readFileSync(plFile).toString().split('\n') || []),
+            ...fs.readFileSync(path.join(process.cwd(), 'utils', file)).toString().split('\n'),
+            ...(fs.existsSync(dtPlFile) && fs.readFileSync(dtPlFile).toString().split('\n') || [])
+        ].map(pl => pl.trim()).sort((a, b) => a.length - b.length);
+    }
+
+    return {
+        getPlaces(appDir?: string) {
+            if (!_places_.length) {
+                _places_ = getPl('places.txt', appDir);
+            }
+            return _places_;
+        },
+        getSpecialPlaces(appDir?: string) {
+            if (!_specialPlaces_.length) {
+                _specialPlaces_ = getPl('special_places.txt', appDir);
+            }
+            return _specialPlaces_;
+        },
+        addPlace(place: string, file: string, appDir?: string) {
+            const places = file.includes('special') ? this.getSpecialPlaces(appDir) : this.getPlaces(appDir);
+            if (places.map(pl => pl.toLowerCase()).includes(place.trim().toLowerCase())) {
+                return 'Place already exists'
+            } else {
+                const plFile = path.join(appDir || dataDir, file);
+                places.push(place.trim());
+                places.sort((a, b) => a.length - b.length);
+                fs.appendFileSync(plFile, `\n${place.trim()}`);
+                return 'Place added.'
+            }
+        },
+        getRx(appDir?: string) {
+            if (!_regex_.length) {
+                const rFile = appDir && path.join(appDir, 'rx.txt');
+                const drFile = path.join(dataDir, 'rx.txt');
+                _regex_ = [
+                    ...(rFile && fs.existsSync(rFile) && fs.readFileSync(rFile).toString().split('\n') || []),
+                    ...(fs.existsSync(drFile) && fs.readFileSync(drFile).toString().split('\n') || [])
+                ].filter(r => r.match(/^[^:]+:[^:]*:[ig]{0,2}$/)).map(r => r.split(':')).sort((a, b) => a[0].length - b[0].length) as [string, string, string][];
+            }
+            return _regex_;
+        },
+        addRx(rx: [string, string, string], appDir?: string) {
+            if (this.getRx(appDir).map(r => r[0]).includes(rx[0])) {
+                return `RegExp already Exists! You can edit directly in data directory`
+            } else {
+                const rxFile = path.join(appDir || dataDir, 'rx.txt');
+                fs.appendFileSync(rxFile, `\n${rx.join(':')}`)
+                return 'RegExp added!'
+            }
+        }
+    }
+})()
+
+
+function getExistingData({ cDir, info }: { cDir: string, info: Info }) {
     const existingAlbs: albRow[] = [];
     const existingAudios: audioRow[] = [];
+    const albumsFile = path.join(cDir, "albums.csv");
+    const audiosFile = path.join(cDir, "audios.csv");
     if (fs.existsSync(albumsFile)) {
         const albs = fs.readFileSync(albumsFile).toString().split('\n');
         const stem = albs[0].split(',')[0].trim();
         albs.slice(1).forEach(alb => {
-            let [, url, title, arte, date, lang, place] = alb.split(', ');
+            let [, url, title, arte, sloka, date, lang, place, video, lastUpdatTime] = alb.split(', ');
             if (!url) return;
             url = url.replace(/#/g, stem);
-            fs.existsSync(path.join(cDir, url)) && typeof place == 'string' && existingAlbs.push({ url, labels: { en: title }, arte, date, lang, place })
+            fs.existsSync(path.join(cDir, url)) && typeof place == 'string' && existingAlbs.push({ url, labels: { en: title }, arte, sloka, date, lang, place, video, lastUpdatTime })
         })
     }
 
@@ -33,14 +100,16 @@ function getExistingData({ cDir, albumsFile, audiosFile, info }: { cDir: string,
         const audios = fs.readFileSync(audiosFile).toString().split('\n');
         const stem = audios[0].split(',')[0].trim();
         audios.slice(1).forEach(a => {
-            const [, url, title, arte, sloka, date, lang, place, size, video] = a.split(', ');
-            url && typeof size == 'string' && existingAudios.push({ url: url.replace(/#/g, stem), labels: { en: title }, arte, sloka, date, lang, place, size, video })
+            const [, url, title, arte, sloka, date, lang, place, video, size, lastUpdatTime] = a.split(', ');
+            url && typeof size == 'string' && existingAudios.push({ url: url.replace(/#/g, stem), labels: { en: title }, arte, sloka, date, lang, place, video, size, lastUpdatTime })
         })
     }
 
     Object.keys(info.i18n.labelLangs).filter(l => l !== 'en').forEach(k => {
-        if (fs.existsSync(`${albumsFile.replace('.csv', '')}_${k}.csv`)) {
-            const labels = fs.readFileSync(`${albumsFile.replace('.csv', '')}_${k}.csv`).toString().trim();
+        const albumsFile = path.join(cDir, `albums_${k}.csv`);
+        const audiosFile = path.join(cDir, `audios_${k}.csv`);
+        if (fs.existsSync(albumsFile)) {
+            const labels = fs.readFileSync(albumsFile).toString().trim();
             labels && existingAlbs.length && labels.split('\n').map((l, i) => existingAlbs[i].labels[k] = l);
         } else {
             existingAlbs.map(alb => {
@@ -49,8 +118,8 @@ function getExistingData({ cDir, albumsFile, audiosFile, info }: { cDir: string,
             })
         }
 
-        if (fs.existsSync(`${audiosFile.replace('.csv', '')}_${k}.csv`)) {
-            const labels = fs.readFileSync(`${audiosFile.replace('.csv', '')}_${k}.csv`).toString().trim();
+        if (fs.existsSync(audiosFile)) {
+            const labels = fs.readFileSync(audiosFile).toString().trim();
             labels && existingAudios.length && labels.split('\n').map((l, i) => existingAudios[i].labels[k] = l);
         } else {
             existingAudios.map(a => {
@@ -74,30 +143,34 @@ async function scrapeIDT(url: string, parentAlb: string, info: Info): Promise<{ 
             const [, a, d, s,] = r.match(/<td(.*?)>(.*?)<\/td>/g)?.map(td => /<td(.*?)>(.*?)<\/td>/.exec(td)![2].trim()) as string[];
             const url = /<a href=(.*?)>(.*?)<\/a>/.exec(a)![1].replace(/(\"|\/)/g, '');
             let title = hari(decodeURI(url).replace(/_/g, ' ')).split('.')[0];
-            // Comment this line if don't want to remove parent Alb Name
-            title = title.replace(parentAlb, '');
+            if (info.flags.removeParentStr)
+                title = title.replace(parentAlb, '');
+            const { title_, ...otr } = { ...getRef(title) }
             if (url.match(/.*\..*/)) { // is audio
-                const { title_, ...otr } = { ...getRef(title) }
-                const l = getLang(title_, info.i18n.audioLangs);
                 audios.push({
                     url,
-                    labels: { en: l.title },
+                    labels: { en: title_ },
                     arte: '',
-                    lang: l.lang,
+                    lang: '',
                     size: s,
                     video: '',
-                    ...otr
+                    place: '',
+                    ...otr,
+                    lastUpdatTime: d
                 })
+                touchUp(audios, info, fileUtils.getRx(), fileUtils.getPlaces(), fileUtils.getSpecialPlaces(), parentAlb);
             } else {
-                const { title_, place } = getPlace(title);
                 albums.push({
                     url,
                     labels: { en: title_ },
                     arte: '',
-                    date: d,
                     lang: '',
-                    place,
+                    place: '',
+                    ...otr,
+                    video: '',
+                    lastUpdatTime: d,
                 })
+                touchUp(albums, info, fileUtils.getRx(), fileUtils.getPlaces(), fileUtils.getSpecialPlaces(), parentAlb);
             }
             return { url, d, s }
         })
@@ -107,9 +180,9 @@ async function scrapeIDT(url: string, parentAlb: string, info: Info): Promise<{ 
     return { albums, audios, tmp }
 }
 
-function writeData({ cDir, albumsFile, audiosFile, albums, audios, info }: { cDir: string, albumsFile: string, audiosFile: string, albums: albRow[], audios: audioRow[], info: Info }) {
+function writeData({ cDir, albums, audios, info }: { cDir: string, albums: albRow[], audios: audioRow[], info: Info }) {
     const albStem = findStem(albums.map(a => a.url));
-    fs.writeFileSync(albumsFile, `${albStem},${albHeaders.join(', ')}\n` + albums.map(a => {
+    fs.writeFileSync(path.join(cDir, "albums.csv"), `${albStem},${albHeaders.join(', ')}\n` + albums.map(a => {
         const newAlbDir = path.join(cDir, a.url);
         fs.existsSync(newAlbDir) || fs.mkdirSync(newAlbDir);
         return { ...a, url: a.url.replace(new RegExp(albStem, 'g'), '#') }
@@ -118,15 +191,15 @@ function writeData({ cDir, albumsFile, audiosFile, albums, audios, info }: { cDi
 
     const stem = findStem(audios.map(a => a.url));
     // @ts-ignore
-    fs.writeFileSync(audiosFile, `${stem},${audioHeaders.join(', ')}\n` + audios.map(a => ({ ...a, url: a.url.replace(new RegExp(stem, 'g'), '#') })).map(a => audioHeaders.reduce((r, c) => `${r}, ${c === 'labels' ? a[c].en : a[c]}`, '')).join('\n'));
+    fs.writeFileSync(path.join(cDir, "audios.csv"), `${stem},${audioHeaders.join(', ')}\n` + audios.map(a => ({ ...a, url: a.url.replace(new RegExp(stem, 'g'), '#') })).map(a => audioHeaders.reduce((r, c) => `${r}, ${c === 'labels' ? a[c].en : a[c]}`, '')).join('\n'));
 
     Object.keys(info.i18n.labelLangs).filter(l => l !== 'en').forEach(k => {
-        fs.writeFileSync(`${albumsFile.replace('.csv', '')}_${k}.csv`, albums.map(alb => {
+        fs.writeFileSync(path.join(cDir, `albums_${k}.csv`), albums.map(alb => {
             alb.labels[k] = alb.labels[k] || '';
             return alb.labels[k];
         }).join('\n'));
 
-        fs.writeFileSync(`${audiosFile.replace('.csv', '')}_${k}.csv`, audios.map(a => {
+        fs.writeFileSync(path.join(cDir, `audios_${k}.csv`), audios.map(a => {
             a.labels[k] = a.labels[k] || '';
             return a.labels[k];
         }).join('\n'));
@@ -136,10 +209,7 @@ function writeData({ cDir, albumsFile, audiosFile, albums, audios, info }: { cDi
 async function getData(cDir: string, info: Info, appDir: string, update: boolean, parentAlb = '', mxConc = 5) { //mxCon 6 => maxConcarency of 5*4*3*2 = 80 in worst case -- in exceptional case when many subalbums are added and updates in several nested albums it might go beyond
     const baseUrl = info.baseUrl;
     fs.existsSync(cDir) || fs.mkdirSync(cDir);
-    const albumsFile = path.join(cDir, "albums.csv");
-    const audiosFile = path.join(cDir, "audios.csv");
-
-    const { existingAlbs, existingAudios } = getExistingData({ cDir, albumsFile, audiosFile, info })
+    const { existingAlbs, existingAudios } = getExistingData({ cDir, info })
 
     // ========================= Return if not update and prescraped data exists
     if (!update && (existingAlbs.length || existingAudios.length)) {
@@ -165,14 +235,14 @@ async function getData(cDir: string, info: Info, appDir: string, update: boolean
                 updatedAlbs += updates.updatedAlbs || 0;
             }
         })))
-        writeData({ cDir, albumsFile, audiosFile, albums, audios, info });
+        writeData({ cDir, albums, audios, info });
         return { updates: { newAudios, newAlbs, updatedAlbs }, tmp, audios, albums }
     } else {
         if (existingAlbs.length) {
             for (let i = 0; i < albums.length; i++) {
                 const alb = albums[i];
                 const alb1 = existingAlbs.filter(a => a.url == alb.url)[0];
-                if (!alb1 || alb1.date.trim() !== alb.date.trim()) {
+                if (!alb1 || alb1.lastUpdatTime.trim() !== alb.lastUpdatTime.trim()) {
                     const { updates } = await getData(path.join(cDir, alb.url), info, appDir, update, alb.labels.en, mxConc);
                     if (updates) {
                         newAudios += updates.newAudios || 0;
@@ -180,7 +250,7 @@ async function getData(cDir: string, info: Info, appDir: string, update: boolean
                         updatedAlbs += updates.updatedAlbs || 0;
                     }
                     if (alb1) {
-                        alb1.date = alb.date;
+                        alb1.lastUpdatTime = alb.lastUpdatTime;
                         updatedAlbs++;
                     } else newAlbs++;
                 }
@@ -211,29 +281,83 @@ async function getData(cDir: string, info: Info, appDir: string, update: boolean
                 }
             }
         }
-        writeData({ cDir, albumsFile, audiosFile, albums, audios, info });
+        writeData({ cDir, albums, audios, info });
         return { updates: { newAudios, newAlbs, updatedAlbs }, audios, albums }
     }
 }
 
+function rebuildAlb({ albums, audios, appDir, cDir, info, parentAlb, fromUrl = false }: { albums: albRow[], audios: audioRow[], appDir: string, cDir: string, info: Info, parentAlb: string, fromUrl?: boolean }) {
+    touchUp(albums, info, fileUtils.getRx(appDir), fileUtils.getPlaces(appDir), fileUtils.getSpecialPlaces(), parentAlb, fromUrl);
+    touchUp(audios, info, fileUtils.getRx(appDir), fileUtils.getPlaces(appDir), fileUtils.getSpecialPlaces(), parentAlb, fromUrl);
+    writeData({ cDir, albums, audios, info });
+}
+
+function rebuildAll({ albums, audios, appDir, cDir, info, parentAlb, fromUrl = false }: { albums: albRow[], audios: audioRow[], appDir: string, cDir: string, info: Info, parentAlb: string, fromUrl?: boolean }) {
+    rebuildAlb({ albums, audios, appDir, cDir, info, parentAlb, fromUrl });
+    return Promise.all(albums.map(async a => {
+        const { albums, audios } = await getData(path.join(cDir, a.url), info, appDir, false, a.labels.en);
+        await rebuildAll({ albums, audios, appDir, cDir: path.join(cDir, a.url), info, parentAlb: a.labels.en, fromUrl })
+    }))
+}
+
+import { Rebuild, RebuildSubAlbs, RebuildAll, RebuildFromURL, RebuildSubAlbsFromURL, RebuildAllFromURL } from '@/components/Header';
+
 export default async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.method == 'POST') {
-        const dataDir = path.join(process.cwd(), "data");
         fs.existsSync(dataDir) || fs.mkdirSync(dataDir);
 
-        const pathParts = req.body.path.split('&sls;');
-        const appDir = path.join(dataDir, pathParts[0]);
-        if (fs.existsSync(appDir) && fs.lstatSync(appDir).isDirectory() &&
+        const pParts = req.body.path.split('&sls;');
+        const appDir = req.body.path && path.join(dataDir, pParts[0]);
+
+        if (req.body.rx) {
+            res.json({ msg: fileUtils.addRx(req.body.rx, appDir) })
+        } else if (req.body.place) {
+            res.json({ msg: fileUtils.addPlace(req.body.place, 'places.txt', appDir) });
+        } else if (req.body.specialPlace) {
+            res.json({ msg: fileUtils.addPlace(req.body.specialPlace, 'special_places.txt', appDir) });
+        } else if (fs.existsSync(appDir) && fs.lstatSync(appDir).isDirectory() &&
             fs.existsSync(path.join(appDir, "info.json"))) {
             const info: Info = JSON.parse(fs.readFileSync(path.join(appDir, "info.json")).toString());
             const cDir = dataDir + path.sep + req.body.path.replace(/&sls;/g, path.sep);
 
-            if (req.body.audios && req.body.albums) {
-                const albumsFile = path.join(cDir, "albums.csv");
-                const audiosFile = path.join(cDir, "audios.csv");
+            if (req.body.rebuild) {
+                const pUrl = pParts[pParts.length - 1];
+                const parentAlb = !pUrl || cDir == appDir ? '' : (await getData(path.join(appDir, ...pParts.slice(1, pParts.length - 1)), info, appDir, false)).albums.filter(a => a.url == pUrl)[0].labels.en;
+                // @ts-ignore
+                const { audios, albums } = await getData(cDir, info, appDir, false)
+                switch (req.body.rebuild) {
+                    case Rebuild:
+                        rebuildAlb({ albums, audios, appDir, cDir, info, parentAlb });
+                        break;
+                    case RebuildAll:
+                        {
+                            // @ts-ignore
+                            const { audios, albums } = await getData(appDir, info, appDir, false)
+                            await rebuildAll({ albums, audios, appDir, cDir: appDir, info, parentAlb: '' })
+                        }
+                        break;
+                    case RebuildSubAlbs:
+                        await rebuildAll({ albums, audios, appDir, cDir, info, parentAlb })
+                        break;
+                    case RebuildFromURL:
+                        rebuildAlb({ albums, audios, appDir, cDir, info, parentAlb, fromUrl: true });
+                        break;
+                    case RebuildSubAlbsFromURL:
+                        await rebuildAll({ albums, audios, appDir, cDir, info, parentAlb, fromUrl: true })
+                        break;
+                    case RebuildAllFromURL:
+                        {
+                            // @ts-ignore
+                            const { audios, albums } = await getData(appDir, info, appDir, false)
+                            await rebuildAll({ albums, audios, appDir, cDir: appDir, info, parentAlb: '', fromUrl: true })
+                        }
+                        break;
+                }
+                res.status(200).json({ msg: 'Rebuild complete! Please reload the page.' });
+            } else if (req.body.audios && req.body.albums) {
                 const audios = req.body.audios as audioRow[];
                 const albums = req.body.albums as albRow[];
-                writeData({ cDir, albumsFile, audiosFile, audios, albums, info });
+                writeData({ cDir, audios, albums, info });
                 res.json({ msg: 'Data Written' });
             } else {
                 const r = await getData(cDir, info, appDir, req.body.update);

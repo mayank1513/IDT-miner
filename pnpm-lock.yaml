@@ -7,20 +7,21 @@ specifiers:
   '@types/styled-components': 5.1.9
   babel-plugin-styled-components: 1.13.3
   next: 12.0.7
+  p-limit: 4.0.0
   react: 17.0.2
   react-dom: 17.0.2
   react-is: 17.0.2
   styled-components: 5.3.3
-  tiny-async-pool: ^1.2.0
-  typescript: 4.2.4
+  typescript: ^4.5.4
 
 dependencies:
   next: 12.0.7_react-dom@17.0.2+react@17.0.2
+  p-limit: 4.0.0
   react: 17.0.2
   react-dom: 17.0.2_react@17.0.2
   react-is: 17.0.2
   styled-components: 5.3.3_281a4fa50a045c9112baf635f3bc27a7
-  tiny-async-pool: 1.2.0
+  typescript: 4.5.4
 
 devDependencies:
   '@types/node': 15.0.0
@@ -28,7 +29,6 @@ devDependencies:
   '@types/react-dom': 17.0.3
   '@types/styled-components': 5.1.9
   babel-plugin-styled-components: 1.13.3_styled-components@5.3.3
-  typescript: 4.2.4
 
 packages:
 
@@ -1529,6 +1529,13 @@ packages:
       yocto-queue: 0.1.0
     dev: false
 
+  /p-limit/4.0.0:
+    resolution: {integrity: sha512-5b0R4txpzjPWVw/cXXUResoD4hb6U/x9BH08L7nw+GN1sezDzPdxeRvpc9c433fZhBan/wusjbCsqwqm4EIBIQ==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dependencies:
+      yocto-queue: 1.0.0
+    dev: false
+
   /p-locate/4.1.0:
     resolution: {integrity: sha512-R79ZZ/0wAxKGu3oYMlz8jy/kbhsNrS7SKZ7PxEHBgJ5+F2mtFW2fK2cOtBh1cHYkQsbzFV7I+EoRKe6Yt0oK7A==}
     engines: {node: '>=8'}
@@ -1734,11 +1741,6 @@ packages:
     dependencies:
       loose-envify: 1.4.0
       object-assign: 4.1.1
-    dev: false
-
-  /semver/5.7.1:
-    resolution: {integrity: sha512-sauaDf/PZdVgrLTNYHRtpXa1iRiKcaebiKQ1BJdpQlWH2lCvexQdX55snPFyK7QzpudqbCI0qXFfOasHdyNDGQ==}
-    hasBin: true
     dev: false
 
   /semver/6.3.0:
@@ -1949,13 +1951,6 @@ packages:
       setimmediate: 1.0.5
     dev: false
 
-  /tiny-async-pool/1.2.0:
-    resolution: {integrity: sha512-PY/OiSenYGBU3c1nTuP1HLKRkhKFDXsAibYI5GeHbHw2WVpt6OFzAPIRP94dGnS66Jhrkheim2CHAXUNI4XwMg==}
-    dependencies:
-      semver: 5.7.1
-      yaassertion: 1.0.2
-    dev: false
-
   /to-fast-properties/2.0.0:
     resolution: {integrity: sha1-3F5pjL0HkmW8c+A3doGk5Og/YW4=}
     engines: {node: '>=4'}
@@ -1987,11 +1982,11 @@ packages:
     engines: {node: '>=8'}
     dev: false
 
-  /typescript/4.2.4:
-    resolution: {integrity: sha512-V+evlYHZnQkaz8TRBuxTA92yZBPotr5H+WhQ7bD3hZUndx5tGOa1fuCgeSjxAzM1RiN5IzvadIXTVefuuwZCRg==}
+  /typescript/4.5.4:
+    resolution: {integrity: sha512-VgYs2A2QIRuGphtzFV7aQJduJ2gyfTljngLzjpfW9FoYZF6xuw1W0vW9ghCKLfcWrCFxK81CSGRAvS1pn4fIUg==}
     engines: {node: '>=4.2.0'}
     hasBin: true
-    dev: true
+    dev: false
 
   /unbox-primitive/1.0.1:
     resolution: {integrity: sha512-tZU/3NqK3dA5gpE1KtyiJUrEB0lxnGkMFHptJ7q6ewdZ8s12QrODwNbhIJStmJkd1QDXa1NRA8aF2A1zk/Ypyw==}
@@ -2082,11 +2077,12 @@ packages:
     engines: {node: '>=0.4'}
     dev: false
 
-  /yaassertion/1.0.2:
-    resolution: {integrity: sha512-sBoJBg5vTr3lOpRX0yFD+tz7wv/l2UPMFthag4HGTMPrypBRKerjjS8jiEnNMjcAEtPXjbHiKE0UwRR1W1GXBg==}
-    dev: false
-
   /yocto-queue/0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+    dev: false
+
+  /yocto-queue/1.0.0:
+    resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
+    engines: {node: '>=12.20'}
     dev: false

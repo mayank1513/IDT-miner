@@ -8,6 +8,46 @@ interface props {
   updateApps: Function;
 }
 
+function saveInfo(infoState: Info, updateApps: Function, setNeed: Function, createNew = false) {
+  if (!infoState.appName) {
+    alert("You must provide a name for your project");
+    return;
+  }
+  if (
+    !infoState.baseUrl ||
+    !infoState.baseUrl.startsWith("https://audio.iskcondesiretree.com/")
+  ) {
+    alert("baseUrl must start with https://audio.iskcondesiretree.com/");
+    return;
+  }
+
+  fetch("/api/create-project", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      info: infoState,
+      createNew,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      console.log('data', data);
+      if (data.err) {
+        alert(data.err);
+      }
+    })
+    .catch((err) => {
+      console.log('err', err);
+    })
+    .finally(() => {
+      updateApps();
+      setNeed(false)
+    });
+}
+
 const AppDetails = ({
   info = new Info(),
   createNew = false,
@@ -22,40 +62,7 @@ const AppDetails = ({
   const onSubmit: FormEventHandler = (e: FormEvent) => {
     e.preventDefault();
     if (!needToUpdate) return;
-    if (!infoState.appName) {
-      alert("You must provide a name for your project");
-      return;
-    }
-    if (
-      !infoState.baseUrl ||
-      !infoState.baseUrl.startsWith("https://audio.iskcondesiretree.com/")
-    ) {
-      alert("baseUrl must start with https://audio.iskcondesiretree.com/");
-      return;
-    }
-
-    fetch("/api/create-project", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        info: infoState,
-        createNew,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        updateApps();
-        setNeed(false)
-      });
+    saveInfo(infoState, updateApps, setNeed, createNew);
     // https://audio.iskcondesiretree.com/
   };
   return (
@@ -65,7 +72,7 @@ const AppDetails = ({
         <table>
           <tbody>
             {Object.keys(infoState)
-              .filter((key) => key !== "dir" && key !== 'i18n')
+              .filter((key) => !["dir", 'i18n', 'flags'].includes(key))
               .map((key) => (
                 <tr key={key}>
                   <td>
@@ -90,6 +97,22 @@ const AppDetails = ({
                   <td> </td>
                 </tr>
               ))}
+            {
+              Object.keys(infoState.flags).map(k => (<tr key={k}>
+                <td><label htmlFor={k}>
+                  {`${k.charAt(0).toUpperCase()}${k
+                    .substring(1)
+                    .split(/(?=[A-Z])/)
+                    .join(" ")}`}</label></td>
+                {/* @ts-ignore */}
+                <td><input type="checkbox" id={k} checked={infoState.flags[k]}
+                  onChange={() => {
+                    // @ts-ignore
+                    infoState.flags[k] = !infoState.flags[k];
+                    setInfoState({ ...infoState })
+                  }} /></td>
+                <td></td></tr>))
+            }
           </tbody>
         </table>
       </fieldset>
@@ -111,6 +134,7 @@ const AppDetails = ({
                       // @ts-ignore
                       delete infoState.i18n.labelLangs[l]
                       setInfoState({ ...infoState })
+                      !createNew && saveInfo(infoState, updateApps, setNeed);
                     }
                   }}>⛔</td>
                 </tr>
@@ -125,6 +149,7 @@ const AppDetails = ({
             // @ts-ignore
             infoState.i18n.labelLangs[tmp[0].trim()] = tmp[1].trim();
             setInfoState({ ...infoState })
+            !createNew && saveInfo(infoState, updateApps, setNeed);
           } else {
             alert('You did not enter language in right format. \n\nPlease try again')
           }
@@ -143,6 +168,7 @@ const AppDetails = ({
                       // @ts-ignore
                       delete infoState.i18n.audioLangs[l]
                       setInfoState({ ...infoState })
+                      !createNew && saveInfo(infoState, updateApps, setNeed);
                     }
                   }}>⛔</td>
                 </tr>
@@ -157,6 +183,7 @@ const AppDetails = ({
             // @ts-ignore
             infoState.i18n.audioLangs[tmp[0].trim()] = tmp[1].trim();
             setInfoState({ ...infoState })
+            !createNew && saveInfo(infoState, updateApps, setNeed);
           } else {
             alert('You did not enter language in right format. \n\nPlease try again')
           }

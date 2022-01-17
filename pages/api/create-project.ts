@@ -25,10 +25,10 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
         if (req.body.createNew) {
             info.dir = dir;
             const appDir = path.join(dataDir, info.dir);
-            if (fs.existsSync(appDir)) {
-                res.status(503).json({ err: "Directory Already Exists" });
+            if (fs.existsSync(appDir) && fs.existsSync(path.join(appDir, 'info.json'))) {
+                res.status(503).json({ err: "App Already Exists" });
             } else {
-                fs.mkdirSync(appDir);
+                fs.existsSync(appDir) || fs.mkdirSync(appDir);
                 fs.writeFileSync(path.join(appDir, 'info.json'), JSON.stringify(info));
                 res.status(200).json({ info: "Project Created" })
             }

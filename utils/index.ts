@@ -1,3 +1,5 @@
+import { audioRow, albRow, Info } from 'types';
+
 export function findStem(urls: string[], stm?: string) {
     stm && (urls = urls.map(url => url.replace(/#/g, stm)));
     const n = urls.length;
@@ -25,6 +27,56 @@ export function findStem(urls: string[], stm?: string) {
         }
     }
     return res;
+}
+
+export function touchUp(rows: audioRow[] | albRow[], info: Info, reg: [RegExp | string, string, string][], places: string[], specialPlaces: string[], parentAlb: string, fromUrl = false) {
+    rows.forEach((r, i) => {
+        if (fromUrl) {
+            let title = hari(decodeURI(r.url).replace(/_/g, ' ')).split('.')[0];
+            if (info.flags.removeParentStr)
+                title = title.replace(parentAlb, '');
+            const { title_, sloka, date } = { ...getRef(title) }
+            r.labels.en = title_;
+            r.sloka = sloka;
+            r.date = date;
+        }
+        // Get lang from title
+        Object.keys(info.i18n.audioLangs).some(k => {
+            // @ts-ignore
+            const m = r.labels.en.match(new RegExp(info.i18n.audioLangs[k], 'i'));
+            if (m && m[0]) {
+                r.labels.en = r.labels.en.replace(m[0], '');
+                r.lang = k;
+                return true;
+            }
+        })
+
+        if (info.flags.removeParentStr)
+            r.labels.en = r.labels.en.replace(parentAlb, '');
+        // getPlace
+        getPlace(r, places, specialPlaces);
+
+        // replace user provided regex
+        reg.forEach(e => {
+            r.labels.en = r.labels.en.replace(new RegExp(e[0], e[2]), e[1]);
+        })
+
+        // touch up
+        let title = r.labels.en.replace(/HHRNS(M)?|RNS|Amrit Droplets|Bhajans -|Various -|IDT/ig, '')
+            .replace(/^[0-9\-\s.]+/, '')
+            .replace(/[ -]+$/, '')
+            .trim();
+
+        if (!title.length || title.toLowerCase() == 'lecture' || title.toLowerCase() == 'kirtan') {
+            title = (r.sloka.startsWith('vb') ? 'Kirtan' : ('Lecture' + (r.sloka ? ` on ${r.sloka.toUpperCase().replace('.', ' ')}` : ''))) + (r.place ? ` at ${r.place}` : '');
+        }
+        r.labels.en = title;
+
+        // add numbers if required
+        if (info.numbering) {
+            r.labels.en = `${i}`.padStart(rows.length, '0') + ` - ` + r.labels.en
+        }
+    })
 }
 
 export function hari(title_: string) {
@@ -93,7 +145,7 @@ export function hari(title_: string) {
 // const dateFormats = ["yyyy-MM-dd", "dd-MM-yyyy", "yy-MM-dd"/*, "dd-MM-yy"*/, "MM-yyyy", "yyyy-MM", "yyyy"]
 const datePatterns = [/\d{4}-\d{1,2}-\d{1,2}/, /\d{1,2}-\d{1,2}-\d{4}/, /\d{1,2}-\d{1,2}-\d{1,2}/, /\d{1,2}-\d{4}/, /\d{4}-\d{1,2}/, /\d{4}/]
 
-function getDate(title_: string): { title_: string, date: string, place: string } {
+function getDate(title_: string): { title_: string, date: string } {
     let res = { title_, date: '' }
     datePatterns.some(p => {
         const m = title_.match(p);
@@ -102,17 +154,13 @@ function getDate(title_: string): { title_: string, date: string, place: string 
             return true;
         }
     })
-    return { ...res, ...getPlace(res.title_) };
+    return { ...res };
 }
 
-import places from '@/utils/places.json';
-import specialPlaces from '@/utils/special_places.json';
-
-export function getPlace(title_: string): { title_: string, place: string } {
-    let t = ` ${title_} `;
+function getPlace(audio: audioRow | albRow, places: string[], specialPlaces: string[]) {
+    let t = ` ${audio.labels.en} `;
     let p1 = '';
     let p2 = '';
-    let place = '';
 
     places.some(place_ => {
         let p = ` ${place_}`.toLowerCase()
@@ -136,13 +184,12 @@ export function getPlace(title_: string): { title_: string, place: string } {
         p = p1;
 
     if (p.length) {
-        place = p.split(' ').map(it => it.charAt(0).toUpperCase() + it.substring(1)).join(' ');
+        audio.place = p.split(' ').map(it => it.charAt(0).toUpperCase() + it.substring(1)).join(' ');
         if (p2.length) {
-            title_ = title_.replace(new RegExp(p2, 'i'), "")
+            audio.labels.en = audio.labels.en.replace(new RegExp(p2, 'i'), "")
                 .replace(/ +/, " ").trim();
         }
     }
-    return { title_, place }
 }
 
 
@@ -205,7 +252,7 @@ const bookPatterns = bookParsers.map(p => new RegExp(p, 'i'));
 
 import layrics from '@/utils/lyrics.json';
 
-export function getRef(title_: string): { title_: string, sloka: string, date: string, place: string } {
+export function getRef(title_: string): { title_: string, sloka: string, date: string } {
     let res = {
         title_: '',
         sloka: '',
@@ -219,11 +266,11 @@ export function getRef(title_: string): { title_: string, sloka: string, date: s
         if (m && m[0]) {
             const sloka = m[0].toLowerCase()
                 .replace(/(canto|chapter|ch|text|to|līlā|lila|mantra|reading)/g, " ")
-                .replace(/(bhagavad([\\-\\s])*)?gītā/g, "bg")
-                .replace(/(śrīmad[\\-\\s]?)?bhāgavatam/g, "sb")
-                .replace(/(śrī([\\-\\s])*)?caitanya caritāmṛta/g, "cc")
+                .replace(/(bhagavad([\-\s])*)?gītā/g, "bg")
+                .replace(/(śrīmad[\-\s]?)?bhāgavatam/g, "sb")
+                .replace(/(śrī([\-\s])*)?caitanya caritāmṛta/g, "cc")
                 .replace(/(al|ādī)/g, "adi")
-                .replace(/kṛṣṇa book([\\-\\s]*dict)?/g, "kb")
+                .replace(/kṛṣṇa book([\-\s]*dict)?/g, "kb")
                 .replace(/ml/g, "madhya")
                 .replace(/nectar of devotion/g, "nod")
                 .replace(/nectar of instruction(s)?/g, "noi")
@@ -255,7 +302,7 @@ export function getRef(title_: string): { title_: string, sloka: string, date: s
             .replace(/Vis(h)?al(a)?/, "Viśāla")
             .replace(/Yas(h)?omati/i, "Yaśomatī")
             .replace(/sunder(a)?/i, "Sundara")
-            .replace(/vi(ba)?bha[vb](a)?ri(\\s)?s(h)?es(ha|a)?/i, "Vibhavari Śeṣa");
+            .replace(/vi(ba)?bha[vb](a)?ri(\s)?s(h)?es(ha|a)?/i, "Vibhavari Śeṣa");
 
         let sloka = ''
         layrics.some(l => {
@@ -274,17 +321,4 @@ export function getRef(title_: string): { title_: string, sloka: string, date: s
         res = { ...res, title_, sloka }
     }
     return { ...res, ...getDate(res.title_) };
-}
-
-export function getLang(title: string, l: any) {
-    let lang = '';
-    Object.keys(l).some(k => {
-        const m = title.match(new RegExp(l[k], 'i'));
-        if (m && m[0]) {
-            title = title.replace(m[0], '');
-            lang = k;
-            return true;
-        }
-    })
-    return { title, lang }
 }

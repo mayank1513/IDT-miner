@@ -9,6 +9,10 @@ export class Info {
     twitter = ""
     remote = ""
     dir = ""
+    flags = {
+        numbering: false,
+        removeParentStr: true
+    }
     i18n = {
         titles: {},
         labelLangs: { en: 'English' },
@@ -20,9 +24,12 @@ export interface albRow {
     url: string,
     labels: any,
     arte: string,
+    sloka: string,
     date: string,
     lang: string,
     place: string,
+    video: string,
+    lastUpdatTime: string
 }
 
 export interface audioRow {
@@ -33,6 +40,7 @@ export interface audioRow {
     date: string,
     lang: string,
     place: string,
+    video: string,
     size: string,
-    video: string
+    lastUpdatTime: string
 }
