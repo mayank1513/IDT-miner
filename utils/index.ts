@@ -314,7 +314,7 @@ export function getRef(title_: string): { title_: string, sloka: string, date: s
                 || t.includes(s.trim())
                 || s2.match(new RegExp(".*" + s1.replace(/śrī ?/, "").trim() + ".*"))
                 || s1.includes(s2)) {
-                sloka = `vb.${layrics.indexOf(l)}`;
+                sloka = `vb.${l.id}`;
                 return true;
             }
         })

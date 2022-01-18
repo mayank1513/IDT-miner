@@ -41,14 +41,32 @@ export default function App() {
         audios: data.audios,
         langs: Object.entries(data.info.i18n.labelLangs)
       })
+      setSaved(true);
       setLoaderVisible(false);
     })
+  }, [router.query])
 
-    window.addEventListener('beforeunload', onBeforeUnload)
+  useEffect(() => {
+    const handleRouteChanges = (url: string) => {
+      if (router.pathname !== url && !confirm(`You have not saved your data. Your data will be loast if you don't save.`)) {
+        router.events.emit('routeChangeError');
+        throw 'Unsaved Chnages'
+      }
+    }
+    if (saved) {
+      router.events.off("beforeHistoryChange", handleRouteChanges)
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    } else {
+      router.events.on("beforeHistoryChange", handleRouteChanges)
+      window.addEventListener('beforeunload', onBeforeUnload)
+    }
+
+    // window.addEventListener('beforeunload', onBeforeUnload)
     return () => {
       window.removeEventListener('beforeunload', onBeforeUnload);
+      router.events.off("beforeHistoryChange", handleRouteChanges)
     }
-  }, [router.query])
+  }, [saved])
 
   return (
     <Container>
