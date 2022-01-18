@@ -1,5 +1,6 @@
 import type { NextComponentType } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import styled from "styled-components";
 import { useRouter, NextRouter } from "next/router";
 import { postAppData } from "@/utils/feHelpers"
@@ -71,13 +72,17 @@ const Header: NextComponentType = () => {
   const router = useRouter();
   return (
     <StyledHeader>
-      <Image
-        src="/logo.png"
-        height={42}
-        width={72}
-        className="logo"
-        alt="logo"
-      ></Image>
+      <Link href="/">
+        <a>
+          <Image
+            src="/logo.png"
+            height={42}
+            width={72}
+            className="logo"
+            alt="logo"
+          ></Image>
+        </a>
+      </Link>
       <h2>Krishna Apps Audio Apps Data Prep Tool</h2>
       <span className="spacer"></span>
       <div className="menuContainer">
@@ -133,6 +138,7 @@ const StyledHeader = styled.header/*css */`
   }
   .logo {
     padding: 0 15px !important;
+    cursor: pointer;
   }
   .spacer {
     flex-grow: 1;

@@ -6,7 +6,7 @@ import Loader from "@/components/Loader";
 import { postAppData } from "@/utils/feHelpers";
 
 type stateType = { albums: albRow[], audios: audioRow[], langs: string[][] }
-const reducer = (state: stateType, action: stateType) => {
+const reducer = (_state: stateType, action: stateType) => {
   return action;
 }
 function onBeforeUnload(e: Event) {
@@ -16,7 +16,7 @@ function onBeforeUnload(e: Event) {
   console.log(msg);
   if (e) {
     e.preventDefault();
-    e.returnValue = msg;
+    e.returnValue = true;
   }
   return msg;
   // }

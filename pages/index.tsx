@@ -57,7 +57,7 @@ export default function Home() {
         <Main>
           <ul className="appList">
             {apps.map((app: Info, ind: number) => (
-              <li key={app.appName} onClick={() => dispatch(selectApp(ind))}>
+              <li key={app.dir} onClick={() => dispatch(selectApp(ind))}>
                 {app.appName}
                 <span className="spacer"></span>
                 <Link href={`/${app.dir}`}>

@@ -73,7 +73,7 @@ export function touchUp(rows: audioRow[] | albRow[], info: Info, reg: [RegExp | 
         r.labels.en = title;
 
         // add numbers if required
-        if (info.numbering) {
+        if (info.flags.numbering) {
             r.labels.en = `${i}`.padStart(rows.length, '0') + ` - ` + r.labels.en
         }
     })

@@ -85,6 +85,7 @@ const AppDetails = ({
                   </td>
                   <td>
                     <input
+                      disabled={!createNew && (key === 'remote' || key === 'baseUrl')}
                       type="text"
                       // @ts-ignore
                       value={infoState[key]}
@@ -189,6 +190,7 @@ const AppDetails = ({
           }
         }}>Add Language</Button>
       </fieldset>
+      {/* @ts-ignore */}
       <Button className={!needToUpdate && "disable"} onClick={onSubmit}>{createNew ? "Create" : "Update Info"}</Button>
     </Form>
   );
