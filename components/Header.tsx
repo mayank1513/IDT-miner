@@ -8,6 +8,7 @@ import { postAppData } from "@/utils/feHelpers"
 const RegEx = 'Add RegExp to replace from all';
 const AddPlace = 'Add place';
 const AddSpecialPlace = 'Add Special place';
+const AddAlb = 'Manually Add Album';
 export const Rebuild = 'Rebuiild this album from titles';
 export const RebuildSubAlbs = 'Rebuild this and all sub-albums from titles';
 export const RebuildAll = 'Rebuild all albums from titles';
@@ -15,7 +16,7 @@ export const RebuildFromURL = 'Rebuiild this album from urls';
 export const RebuildSubAlbsFromURL = 'Rebuild this and all sub-albums from urls';
 export const RebuildAllFromURL = 'Rebuild all albums from urls';
 
-const appMenu: string[] = [RegEx, AddPlace, AddSpecialPlace, Rebuild, RebuildSubAlbs, RebuildAll, RebuildFromURL, RebuildSubAlbsFromURL, RebuildAllFromURL]
+const appMenu: string[] = [RegEx, AddPlace, AddSpecialPlace, AddAlb, Rebuild, RebuildSubAlbs, RebuildAll, RebuildFromURL, RebuildSubAlbsFromURL, RebuildAllFromURL]
 const mainMenu: string[] = [RegEx, AddPlace, AddSpecialPlace]
 
 function addRegEx(router: NextRouter) {
@@ -51,6 +52,14 @@ const handler = (router: NextRouter, m: string) => {
           .then(data => {
             alert(data.msg);
           })
+      break;
+    case AddAlb:
+      const albUrl = prompt('Enter Album Url Path:')?.trim();
+      postAppData({ path: router.query.app || '', albUrl })
+        .then(data => {
+          alert(data.msg);
+          router.reload();
+        })
       break;
     case Rebuild:
     case RebuildAll:

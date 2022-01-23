@@ -146,7 +146,7 @@ async function scrapeIDT(url: string, parentAlb: string, info: Info): Promise<{ 
             if (info.flags.removeParentStr)
                 title = title.replace(parentAlb, '');
             const { title_, ...otr } = { ...getRef(title) }
-            if (url.match(/.*\..*/)) { // is audio
+            if (url.match(/.*\.(mp3|wma)$/i)) { // is audio
                 audios.push({
                     url,
                     labels: { en: title_ },
@@ -159,7 +159,7 @@ async function scrapeIDT(url: string, parentAlb: string, info: Info): Promise<{ 
                     lastUpdatTime: d
                 })
                 touchUp(audios, info, fileUtils.getRx(), fileUtils.getPlaces(), fileUtils.getSpecialPlaces(), parentAlb);
-            } else {
+            } else if (!url.includes('.')) {
                 albums.push({
                     url,
                     labels: { en: title_ },
@@ -320,11 +320,33 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             const info: Info = JSON.parse(fs.readFileSync(path.join(appDir, "info.json")).toString());
             const cDir = dataDir + path.sep + req.body.path.replace(/&sls;/g, path.sep);
 
-            if (req.body.rebuild) {
-                const pUrl = pParts[pParts.length - 1];
-                const parentAlb = !pUrl || cDir == appDir ? '' : (await getData(path.join(appDir, ...pParts.slice(1, pParts.length - 1)), info, appDir, false)).albums.filter(a => a.url == pUrl)[0].labels.en;
-                // @ts-ignore
-                const { audios, albums } = await getData(cDir, info, appDir, false)
+            const pUrl = pParts[pParts.length - 1];
+            const parentAlb = !pUrl || cDir == appDir ? '' : (await getData(path.join(appDir, ...pParts.slice(1, pParts.length - 1)), info, appDir, false)).albums.filter(a => a.url == pUrl)[0].labels.en;
+            const { audios, albums } = await getData(cDir, info, appDir, false)
+            if (req.body.albUrl) {
+                const url = req.body.albUrl.toLowerCase().trim();
+                if (albums.map(a => a.url.toLowerCase().trim()).includes(url)) {
+                    res.json({ msg: 'Album Already Exists!' });
+                } else {
+                    let title = hari(decodeURI(req.body.albUrl).replace(/_/g, ' ')).split('.')[0];
+                    if (info.flags.removeParentStr)
+                        title = title.replace(parentAlb, '');
+                    const { title_, ...otr } = { ...getRef(title) }
+                    albums.push({
+                        url: req.body.albUrl,
+                        labels: { en: title_ },
+                        arte: '',
+                        lang: '',
+                        place: '',
+                        ...otr,
+                        video: '',
+                        lastUpdatTime: new Date().toDateString(),
+                    })
+                    touchUp(albums, info, fileUtils.getRx(), fileUtils.getPlaces(), fileUtils.getSpecialPlaces(), parentAlb);
+                    writeData({ cDir, albums, audios, info });
+                    res.json({ msg: 'Album Added' })
+                }
+            } else if (req.body.rebuild) {
                 switch (req.body.rebuild) {
                     case Rebuild:
                         rebuildAlb({ albums, audios, appDir, cDir, info, parentAlb });

@@ -5,7 +5,7 @@ import Row from "@/components/Row";
 import Loader from "@/components/Loader";
 import { postAppData } from "@/utils/feHelpers";
 
-type stateType = { albums: albRow[], audios: audioRow[], langs: string[][] }
+type stateType = { albums: albRow[], audios: audioRow[], langs: string[][], audioLangs: string[][] }
 const reducer = (_state: stateType, action: stateType) => {
   return action;
 }
@@ -24,7 +24,7 @@ function onBeforeUnload(e: Event) {
 
 export default function App() {
   const router = useRouter();
-  const [{ albums, audios, langs }, setState] = useReducer(reducer, { albums: [], audios: [], langs: [] });
+  const [{ albums, audios, langs, audioLangs }, setState] = useReducer(reducer, { albums: [], audios: [], langs: [], audioLangs: [] });
   const [loaderVisible, setLoaderVisible] = useState(true);
   const [saved, setSaved] = useState(true);
 
@@ -39,7 +39,8 @@ export default function App() {
       setState({
         albums: data.albums,
         audios: data.audios,
-        langs: Object.entries(data.info.i18n.labelLangs)
+        langs: Object.entries(data.info.i18n.labelLangs),
+        audioLangs: Object.entries(data.info.i18n.audioLangs),
       })
       setSaved(true);
       setLoaderVisible(false);
@@ -101,7 +102,7 @@ export default function App() {
               </thead>
               <tbody>
                 {
-                  albums.map(a => <Row key={a.url} saved={saved} setSaved={setSaved} a={a} arteBaseUrl="" langs={langs} />)
+                  albums.map(a => <Row key={a.url} saved={saved} setSaved={setSaved} a={a} arteBaseUrl="" langs={audioLangs} />)
                 }
               </tbody>
             </table>
@@ -126,7 +127,7 @@ export default function App() {
               </thead>
               <tbody>
                 {
-                  audios.map(a => <Row key={a.url} saved={saved} setSaved={setSaved} a={a} arteBaseUrl="" langs={langs} />)
+                  audios.map(a => <Row key={a.url} saved={saved} setSaved={setSaved} a={a} arteBaseUrl="" langs={audioLangs} />)
                 }
               </tbody>
             </table>
